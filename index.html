@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>인사총무팀 업무 보드</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --ink: #1d2433; --muted: #6b7385; --line: #e2e5eb;
+    --accent: #2f6fed; --accent-soft: #e8effd; --danger: #d64545; --danger-soft: #fdecec;
+    --warn: #c47d10; --warn-soft: #fdf3e2; --ok: #2e8b57; --ok-soft: #e6f4ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d; --panel: #1d2129; --ink: #e7eaf0; --muted: #9aa3b5; --line: #2e3440;
+      --accent: #6b9bff; --accent-soft: #23304a; --danger: #ff7a7a; --danger-soft: #3a2224;
+      --warn: #f0b350; --warn-soft: #3a3020; --ok: #6fcf97; --ok-soft: #1f3328;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    padding: 16px 20px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  h1 { font-size: 18px; margin: 0; }
+  h1 small { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+    border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.small { padding: 3px 8px; font-size: 12px; }
+  main { padding: 16px 20px 40px; max-width: 1280px; margin: 0 auto; }
+  section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+  .tile .label { color: var(--muted); font-size: 12px; }
+  .tile .num { font-size: 26px; font-weight: 700; }
+  .tile.danger .num { color: var(--danger); }
+  .tile.warn .num { color: var(--warn); }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; align-items: center; }
+  .filters span { color: var(--muted); font-size: 12px; margin-right: 4px; }
+  .chip { border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .newbadge { background: var(--danger); color: #fff; border-radius: 999px; padding: 0 7px; font-size: 11px; font-weight: 600; }
+  .two { display: grid; grid-template-columns: 1fr 1.4fr; gap: 14px; }
+  .two > section { margin-bottom: 0; }
+  .twowrap { margin-bottom: 14px; }
+  .today-list { list-style: none; margin: 0; padding: 0; }
+  .today-list li { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--line); align-items: baseline; }
+  .today-list li:last-child { border-bottom: 0; }
+  .today-list .when { min-width: 64px; font-weight: 600; font-size: 13px; }
+  .today-list .when.mtg { color: var(--accent); }
+  .today-list .when.due { color: var(--warn); }
+  .today-list .when.over { color: var(--danger); }
+  .today-list .when.doing { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .flow { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .flow:last-child { border-bottom: 0; }
+  .flow .ftitle { font-weight: 600; margin-bottom: 8px; }
+  .flow .ftitle small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .steps { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; }
+  .step { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12px; min-width: 150px; }
+  .step b { font-size: 13px; }
+  .step.done { background: var(--ok-soft); border-color: var(--ok); }
+  .step.doing, .step.todo { background: var(--accent-soft); border-color: var(--accent); }
+  .step.late { background: var(--danger-soft); border-color: var(--danger); }
+  .step.wait { color: var(--muted); border-style: dashed; }
+  .arrow { align-self: center; color: var(--muted); }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
+  .col { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 160px; }
+  .col h2 { display: flex; justify-content: space-between; font-size: 14px; }
+  .col h2 .count { color: var(--muted); font-weight: 400; }
+  .card { border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 8px;
+    padding: 10px; margin-bottom: 8px; background: var(--bg); }
+  .card.overdue { border-left-color: var(--danger); background: var(--danger-soft); }
+  .card.today { border-left-color: var(--warn); background: var(--warn-soft); }
+  .card.done { opacity: .75; border-left-color: var(--ok); }
+  .card.wait { opacity: .6; border-style: dashed; }
+  .card .title { font-weight: 600; margin-bottom: 6px; word-break: keep-all; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted); align-items: center; }
+  .tag { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 1px 7px; }
+  .tag.handoff { background: var(--ok-soft); color: var(--ok); }
+  .tag.repeat { background: var(--warn-soft); color: var(--warn); }
+  .tag.late { background: var(--danger-soft); color: var(--danger); }
+  .red { color: var(--danger); font-weight: 600; }
+  .card .btns { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 20px; width: min(640px, 94vw);
+    background: var(--panel); color: var(--ink); }
+  dialog::backdrop { background: rgba(0,0,0,.35); }
+  dialog h3 { margin: 0 0 12px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  input, select, textarea { width: 100%; font: inherit; padding: 7px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink); }
+  input[type=checkbox] { width: auto; }
+  textarea { min-height: 150px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .checks { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+  .dlg-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .preview { margin-top: 10px; max-height: 260px; overflow: auto; }
+  .preview .item { display: grid; grid-template-columns: 76px 1fr 96px 132px; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .kind { font-size: 12px; border-radius: 6px; padding: 2px 6px; text-align: center; }
+  .kind.task { background: var(--accent-soft); color: var(--accent); }
+  .kind.step { background: var(--ok-soft); color: var(--ok); }
+  .kind.meeting { background: var(--warn-soft); color: var(--warn); }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+    padding: 10px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 860px) {
+    header, main { padding-left: 16px; padding-right: 16px; }
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .two, .board { grid-template-columns: 1fr; }
+    .two > section { margin-bottom: 14px; }
+    .preview .item { grid-template-columns: 1fr 1fr; }
+    .table-wrap { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>인사총무팀 업무 보드 <small>직원은 시작·완료만 누르세요</small></h1>
+  <div class="actions">
+    <button class="primary" id="btnMemo">회의록 → 업무 배정</button>
+    <button id="btnMeeting">+ 회의 추가</button>
+    <button id="btnAdd">+ 업무 추가</button>
+    <button id="btnRepeat">이번 달 반복 업무</button>
+    <button id="btnReset" title="샘플 데이터로 되돌리기">초기화</button>
+  </div>
+</header>
+
+<main>
+  <div class="summary">
+    <div class="tile"><div class="label">이번 주 할 일</div><div class="num" id="sWeek">0</div></div>
+    <div class="tile warn"><div class="label">오늘 마감</div><div class="num" id="sToday">0</div></div>
+    <div class="tile danger"><div class="label">기한 지남</div><div class="num" id="sOver">0</div></div>
+    <div class="tile"><div class="label">이번 주 완료</div><div class="num" id="sDone">0</div></div>
+  </div>
+  <div class="filters" id="filters"></div>
+
+  <div class="two twowrap">
+    <section class="panel"><h2 id="todayTitle">오늘의 할 일</h2><ul class="today-list" id="todayList"></ul></section>
+    <section class="panel"><h2>사람별 현황</h2><div class="table-wrap"><table>
+      <thead><tr><th>팀원</th><th>오늘 회의</th><th>오늘 마감</th><th>진행 중</th><th>협업 진척</th></tr></thead>
+      <tbody id="people"></tbody></table></div></section>
+  </div>
+
+  <section class="panel"><h2>협업 진척</h2><div id="flows"></div></section>
+
+  <div class="board">
+    <div class="col"><h2>할 일 <span class="count" id="cTodo"></span></h2><div id="todo"></div></div>
+    <div class="col"><h2>진행 중 <span class="count" id="cDoing"></span></h2><div id="doing"></div></div>
+    <div class="col"><h2>완료 <span class="count" id="cDone"></span></h2><div id="done"></div></div>
+  </div>
+</main>
+
+<dialog id="dlgAdd">
+  <h3>업무 추가</h3>
+  <label>할 일</label><input id="fTitle" placeholder="예: 워크숍 장소 3곳 알아보기">
+  <div class="row">
+    <div><label>담당자</label><select id="fOwner"></select></div>
+    <div><label>예정일</label><input id="fPlan" type="date"></div>
+  </div>
+  <div class="row">
+    <div><label>다음 담당자 (협업 · 완료 시 자동 인계)</label><select id="fNext"></select></div>
+    <div><label>다음 담당자 예정일</label><input id="fNextPlan" type="date"></div>
+  </div>
+  <div class="dlg-btns"><button id="addCancel">취소</button><button class="primary" id="addOk">추가</button></div>
+</dialog>
+
+<dialog id="dlgMeeting">
+  <h3>회의 추가</h3>
+  <label>회의명</label><input id="mTitle" placeholder="예: 주간회의">
+  <div class="row">
+    <div><label>날짜</label><input id="mDate" type="date"></div>
+    <div><label>시간</label><input id="mTime" type="time" value="10:00"></div>
+  </div>
+  <label>참석자</label><div class="checks" id="mPeople"></div>
+  <div class="dlg-btns"><button id="mCancel">취소</button><button class="primary" id="mOk">추가</button></div>
+</dialog>
+
+<dialog id="dlgMemo">
+  <h3>회의록 → 업무 배정</h3>
+  <textarea id="memo" placeholder="회의록을 붙여넣으세요"></textarea>
+  <div class="hint">한 줄에 한 업무. 이름과 기한(오늘, 내일, 금요일, 10/31, 11월 3일)을 쓰면 자동 배정해요.
+    "A … 끝나면 B …" 또는 "→"는 협업으로, "회의 + 시간"은 회의 일정으로 등록해요.</div>
+  <div class="dlg-btns"><button id="memoSample">예시 넣기</button><button class="primary" id="memoParse">변환</button></div>
+  <div class="preview" id="preview"></div>
+  <div class="dlg-btns"><button id="memoCancel">닫기</button><button class="primary" id="memoOk" disabled>모두 추가</button></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'hr-kanban-v2';
+const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+// ---------- 날짜 ----------
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const T = () => ymd(today());
+const dayDiff = (a, b) => Math.round((new Date(a + 'T00:00:00') - new Date(b + 'T00:00:00')) / 864e5);
+const md = s => { if (!s) return '-'; const d = new Date(s + 'T00:00:00'); return `${d.getMonth() + 1}/${d.getDate()}(${DAYS[d.getDay()]})`; };
+function weekRange() { const t = today(), mon = addDays(t, -((t.getDay() + 6) % 7)); return [ymd(mon), ymd(addDays(mon, 6))]; }
+
+// ---------- 상태 ----------
+const uid = () => Math.random().toString(36).slice(2, 10);
+function sample() {
+  const t = today(), d = n => ymd(addDays(t, n));
+  const f = uid();
+  return {
+    members: ['김민지', '이서준', '박지우', '최현우'],
+    templates: [
+      { title: '원천세 신고', owner: '박지우', day: 10 },
+      { title: '4대보험 정산 확인', owner: '최현우', day: 15 },
+      { title: '급여 마감 자료 취합', owner: '이서준', day: 20 },
+      { title: '월말 경비 정산', owner: '김민지', day: 28 },
+    ],
+    generated: {},
+    flows: [{ id: f, title: '연말 워크숍 준비' }],
+    tasks: [
+      { id: uid(), title: '장소 견적 3곳 받기', owner: '김민지', plan: d(-1), start: d(-3), done: d(0), status: 'done', flow: f, step: 1 },
+      { id: uid(), title: '워크숍 품의서 작성', owner: '이서준', plan: d(2), status: 'todo', flow: f, step: 2, from: '김민지', handoff: d(0) },
+      { id: uid(), title: '참석자 공지 발송', owner: '박지우', plan: d(5), status: 'wait', flow: f, step: 3 },
+      { id: uid(), title: '신입사원 입사 서류 회수', owner: '최현우', plan: d(-2), status: 'todo' },
+      { id: uid(), title: '법정 의무교육 이수 현황 점검', owner: '박지우', plan: d(0), start: d(-1), status: 'doing' },
+      { id: uid(), title: '사무용품 분기 발주', owner: '이서준', plan: d(4), status: 'todo' },
+      { id: uid(), title: '복리후생 규정 개정안 초안', owner: '김민지', plan: d(9), start: d(0), status: 'doing' },
+      { id: uid(), title: '회의실 예약 규칙 정리', owner: '최현우', plan: d(-3), start: d(-4), done: d(-1), status: 'done' },
+    ],
+    meetings: [
+      { id: uid(), date: d(0), time: '10:00', title: '주간 팀 회의', attendees: ['김민지', '이서준', '박지우', '최현우'] },
+      { id: uid(), date: d(0), time: '14:00', title: '경력직 채용 면접', attendees: ['김민지'] },
+      { id: uid(), date: d(1), time: '15:00', title: '노무 자문 미팅', attendees: ['최현우'] },
+    ],
+  };
+}
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.tasks) return s; } catch (e) {} return sample(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+let state = load();
+let filter = '전체';
+
+// ---------- 렌더 ----------
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const mine = x => filter === '전체' || x.owner === filter;
+const flowSteps = id => state.tasks.filter(t => t.flow === id).sort((a, b) => a.step - b.step);
+const flowTitle = id => (state.flows.find(f => f.id === id) || {}).title || '협업';
+const isOpen = t => t.status === 'todo' || t.status === 'doing';
+
+function render() {
+  const t = T(), [ws, we] = weekRange();
+  const open = state.tasks.filter(x => isOpen(x) && mine(x));
+  $('sWeek').textContent = open.filter(x => x.plan && x.plan >= ws && x.plan <= we).length;
+  $('sToday').textContent = open.filter(x => x.plan === t).length;
+  $('sOver').textContent = open.filter(x => x.plan && x.plan < t).length;
+  $('sDone').textContent = state.tasks.filter(x => mine(x) && x.status === 'done' && x.done >= ws).length;
+
+  const fresh = m => state.tasks.filter(x => x.owner === m && x.handoff && !x.seen && x.status !== 'done').length;
+  $('filters').innerHTML = '<span>담당자</span>' + ['전체', ...state.members].map(m => {
+    const n = m === '전체' ? 0 : fresh(m);
+    return `<button class="chip ${m === filter ? 'on' : ''}" data-filter="${esc(m)}">${esc(m)}${n ? ` <span class="newbadge">새 업무 ${n}</span>` : ''}</button>`;
+  }).join('');
+
+  renderToday(t); renderPeople(t); renderFlows(t); renderBoard(t);
+}
+
+function renderToday(t) {
+  $('todayTitle').textContent = `오늘의 할 일 · ${md(t)}${filter === '전체' ? '' : ' · ' + filter}`;
+  const mtg = state.meetings.filter(m => m.date === t && (filter === '전체' || m.attendees.includes(filter)))
+    .sort((a, b) => a.time < b.time ? -1 : 1)
+    .map(m => `<li><span class="when mtg">${esc(m.time)}</span><span>${esc(m.title)} <span class="meta">· ${esc(m.attendees.join(', '))}</span></span></li>`);
+  const over = state.tasks.filter(x => isOpen(x) && mine(x) && x.plan && x.plan < t)
+    .map(x => `<li><span class="when over">${-dayDiff(x.plan, t)}일 지남</span><span>${esc(x.title)} <span class="meta">· ${esc(x.owner)}</span></span></li>`);
+  const due = state.tasks.filter(x => isOpen(x) && mine(x) && x.plan === t)
+    .map(x => `<li><span class="when due">오늘 마감</span><span>${esc(x.title)} <span class="meta">· ${esc(x.owner)}</span></span></li>`);
+  const doing = state.tasks.filter(x => x.status === 'doing' && mine(x) && x.plan !== t && !(x.plan && x.plan < t))
+    .map(x => `<li><span class="when doing">진행 중</span><span>${esc(x.title)} <span class="meta">· ${esc(x.owner)} · 예정 ${md(x.plan)}</span></span></li>`);
+  const all = [...mtg, ...over, ...due, ...doing];
+  $('todayList').innerHTML = all.length ? all.join('') : '<li class="empty">오늘 할 일이 없어요</li>';
+}
+
+function renderPeople(t) {
+  const people = filter === '전체' ? state.members : [filter];
+  $('people').innerHTML = people.map(p => {
+    const mt = state.meetings.filter(m => m.date === t && m.attendees.includes(p)).sort((a, b) => a.time < b.time ? -1 : 1);
+    const due = state.tasks.filter(x => isOpen(x) && x.owner === p && x.plan && x.plan <= t);
+    const doing = state.tasks.filter(x => x.status === 'doing' && x.owner === p);
+    const collab = state.tasks.filter(x => x.flow && x.owner === p && x.status !== 'done').map(x => {
+      const steps = flowSteps(x.flow), doneN = steps.filter(s => s.status === 'done').length;
+      const st = x.status === 'wait' ? '대기' : x.status === 'doing' ? '진행 중' : '할 일';
+      return `${esc(flowTitle(x.flow))} ${doneN}/${steps.length}단계 · ${st}${x.handoff ? ` · ${md(x.handoff)} 전달받음` : ''}`;
+    });
+    return `<tr><td><b>${esc(p)}</b></td>
+      <td>${mt.length ? mt.map(m => `${esc(m.time)} ${esc(m.title)}`).join('<br>') : '-'}</td>
+      <td>${due.length ? `<span class="${due.some(x => x.plan < t) ? 'red' : ''}">${due.length}건</span>` : '-'}</td>
+      <td>${doing.length ? doing.length + '건' : '-'}</td>
+      <td>${collab.length ? collab.join('<br>') : '-'}</td></tr>`;
+  }).join('');
+}
+
+function stepState(s, t) {
+  if (s.status === 'done') return s.plan && s.done > s.plan ? 'done' : 'done';
+  if (s.status === 'wait') return 'wait';
+  return s.plan && s.plan < t ? 'late' : s.status;
+}
+function renderFlows(t) {
+  const flows = state.flows.filter(f => flowSteps(f.id).some(mine));
+  $('flows').innerHTML = flows.length ? flows.map(f => {
+    const steps = flowSteps(f.id), doneN = steps.filter(s => s.status === 'done').length;
+    const cur = steps.find(s => s.status !== 'done');
+    return `<div class="flow"><div class="ftitle">${esc(f.title)}<small>${doneN}/${steps.length}단계 완료${cur ? ` · 현재 ${esc(cur.owner)}` : ' · 전체 완료'}</small></div>
+      <div class="steps">${steps.map((s, i) => {
+        const late = s.status === 'done' && s.plan && s.done > s.plan ? ` <span class="red">${dayDiff(s.done, s.plan)}일 지연</span>` : '';
+        const label = s.status === 'done' ? `✓ 완료 ${md(s.done)}${late}` : s.status === 'wait' ? `대기 (${esc(steps[i - 1] ? steps[i - 1].owner : '')} 진행 중)` : s.status === 'doing' ? '진행 중' : '할 일';
+        return `${i ? '<span class="arrow">→</span>' : ''}<div class="step ${stepState(s, t)}"><b>${i + 1}. ${esc(s.owner)}</b> ${esc(s.title)}<br>
+          예정 ${md(s.plan)} · ${label}${s.handoff ? `<br>${md(s.handoff)} ${esc(s.from)} → ${esc(s.owner)} 전달` : ''}</div>`;
+      }).join('')}</div></div>`;
+  }).join('') : '<div class="empty">진행 중인 협업이 없어요</div>';
+}
+
+function renderBoard(t) {
+  const order = (a, b) => (a.plan || '9999') < (b.plan || '9999') ? -1 : 1;
+  const cols = { todo: x => x.status === 'todo' || x.status === 'wait', doing: x => x.status === 'doing', done: x => x.status === 'done' };
+  for (const [col, fn] of Object.entries(cols)) {
+    let list = state.tasks.filter(x => fn(x) && mine(x)).sort(order);
+    if (col === 'done') list = list.sort((a, b) => (a.done < b.done ? 1 : -1));
+    $({ todo: 'cTodo', doing: 'cDoing', done: 'cDone' }[col]).textContent = list.length;
+    $(col).innerHTML = list.length ? list.map(x => cardHtml(x, t)).join('') : '<div class="empty">없음</div>';
+  }
+}
+function cardHtml(c, t) {
+  const over = isOpen(c) && c.plan && c.plan < t, isToday = isOpen(c) && c.plan === t;
+  const cls = c.status === 'done' ? 'done' : c.status === 'wait' ? 'wait' : over ? 'overdue' : isToday ? 'today' : '';
+  const steps = c.flow ? flowSteps(c.flow) : [];
+  const next = c.flow ? steps.find(s => s.step === c.step + 1) : null;
+  const prev = c.flow ? steps.find(s => s.step === c.step - 1) : null;
+  let dates = `예정 ${md(c.plan)}`;
+  if (c.status === 'done') {
+    const late = c.plan ? dayDiff(c.done, c.plan) : 0;
+    dates += ` · 완료 ${md(c.done)}` + (late > 0 ? ` <span class="tag late">${late}일 지연 완료</span>` : '');
+  } else if (over) dates += ` <span class="red">${-dayDiff(c.plan, t)}일 지남</span>`;
+  else if (isToday) dates += ' <span class="red">오늘</span>';
+  const btns = c.status === 'todo'
+    ? `<button class="small" data-act="doing" data-id="${c.id}">▶ 시작</button><button class="small primary" data-act="done" data-id="${c.id}">✓ 완료</button>`
+    : c.status === 'doing'
+      ? `<button class="small" data-act="todo" data-id="${c.id}">↩</button><button class="small primary" data-act="done" data-id="${c.id}">✓ 완료</button>`
+      : c.status === 'done' && !(next && next.status !== 'todo' && next.status !== 'wait') ? `<button class="small" data-act="undo" data-id="${c.id}">↩ 되돌리기</button>` : '';
+  return `<div class="card ${cls}">
+    <div class="title">${c.handoff && !c.seen && c.status !== 'done' ? '<span class="newbadge">NEW</span> ' : ''}${esc(c.title)}</div>
+    <div class="meta"><span class="tag">${esc(c.owner)}</span>${c.repeat ? '<span class="tag repeat">반복</span>' : ''}
+      ${c.flow ? `<span class="tag handoff">${esc(flowTitle(c.flow))} ${c.step}/${steps.length}</span>` : ''}</div>
+    <div class="meta" style="margin-top:4px">${dates}</div>
+    ${c.status === 'wait' && prev ? `<div class="meta" style="margin-top:4px">대기 중 · ${esc(prev.owner)}님 ${prev.status === 'doing' ? '진행 중' : '작업 전'}</div>` : ''}
+    ${c.handoff ? `<div class="meta" style="margin-top:4px"><span class="tag handoff">${md(c.handoff)} ${esc(c.from)} → ${esc(c.owner)} 전달받음</span></div>` : ''}
+    ${next ? `<div class="meta" style="margin-top:4px">${c.status === 'done' && next.handoff ? `<span class="tag handoff">${md(next.handoff)} ${esc(next.owner)}에게 전달</span>` : `완료 시 → ${esc(next.owner)}`}</div>` : ''}
+    <div class="btns"><button class="small" data-act="del" data-id="${c.id}" title="삭제">✕</button>${btns}</div>
+  </div>`;
+}
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2600); }
+
+// ---------- 동작 ----------
+function act(id, a) {
+  const c = state.tasks.find(x => x.id === id); if (!c) return;
+  const t = T();
+  if (a === 'doing') { c.status = 'doing'; c.start = c.start || t; }
+  else if (a === 'todo') { c.status = 'todo'; }
+  else if (a === 'done') {
+    c.status = 'done'; c.done = t; c.start = c.start || t;
+    const next = c.flow && flowSteps(c.flow).find(s => s.step === c.step + 1);
+    if (next && next.status === 'wait') {
+      next.status = 'todo'; next.handoff = t; next.from = c.owner; next.seen = false;
+      toast(`${next.owner}님에게 업무가 전달되었어요 (${md(t)})`);
+    } else toast('완료했어요');
+  } else if (a === 'undo') {
+    c.status = 'doing'; delete c.done;
+    const next = c.flow && flowSteps(c.flow).find(s => s.step === c.step + 1);
+    if (next && next.status === 'todo') { next.status = 'wait'; delete next.handoff; delete next.from; }
+  } else if (a === 'del') {
+    if (!confirm('이 업무를 삭제할까요?')) return;
+    state.tasks = state.tasks.filter(x => x.id !== id);
+    state.flows = state.flows.filter(f => state.tasks.some(x => x.flow === f.id));
+  }
+  save(); render();
+}
+function addTask(o) { state.tasks.push({ id: uid(), status: 'todo', ...o }); }
+function addFlow(title, steps) {
+  const id = uid(); state.flows.push({ id, title });
+  steps.forEach((s, i) => addTask({ title: s.title, owner: s.owner, plan: s.plan, flow: id, step: i + 1, status: i ? 'wait' : 'todo' }));
+}
+function generateRepeat() {
+  const t = today(), ym = T().slice(0, 7);
+  if (state.generated[ym]) { toast(`${t.getMonth() + 1}월 반복 업무는 이미 만들었어요`); return; }
+  const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  for (const tp of state.templates) addTask({ title: `${t.getMonth() + 1}월 ${tp.title}`, owner: tp.owner, plan: `${ym}-${pad(Math.min(tp.day, last))}`, repeat: true });
+  state.generated[ym] = true; save(); render();
+  toast(`반복 업무 ${state.templates.length}건을 만들었어요`);
+}
+
+// ---------- 회의록 파싱 ----------
+function parseDate(text) {
+  const t = today(); let m;
+  if (/오늘/.test(text)) return ymd(t);
+  if (/내일/.test(text)) return ymd(addDays(t, 1));
+  if (/모레/.test(text)) return ymd(addDays(t, 2));
+  if ((m = text.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/)) || (m = text.match(/(?<![\d:])(\d{1,2})\s*[\/.]\s*(\d{1,2})(?![\d:])/))) {
+    const d = new Date(t.getFullYear(), +m[1] - 1, +m[2]);
+    if (d < addDays(t, -60)) d.setFullYear(d.getFullYear() + 1);
+    return ymd(d);
+  }
+  if ((m = text.match(/(다음\s*주\s*)?([월화수목금토일])요일/))) {
+    let diff = (DAYS.indexOf(m[2]) - t.getDay() + 7) % 7;
+    if (m[1]) diff += 7;
+    return ymd(addDays(t, diff));
+  }
+  if (/이번\s*주/.test(text)) return ymd(addDays(t, (5 - t.getDay() + 7) % 7));
+  if (/다음\s*주/.test(text)) return ymd(addDays(t, ((1 - t.getDay() + 7) % 7 || 7) + 4));
+  return '';
+}
+function parseTime(text) {
+  let m;
+  if ((m = text.match(/(\d{1,2}):(\d{2})/))) return `${pad(m[1])}:${m[2]}`;
+  if ((m = text.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(반|(\d{1,2})\s*분)?/))) {
+    let h = +m[2]; if (m[1] === '오후' && h < 12) h += 12; if (!m[1] && h < 8) h += 12;
+    return `${pad(h)}:${m[3] === '반' ? '30' : pad(m[4] || 0)}`;
+  }
+  return '';
+}
+const findOwner = s => state.members.find(n => s.includes(n) || s.includes(n.slice(1))) || '';
+function cleanTitle(s, owner) {
+  if (owner) s = s.replace(new RegExp(`${owner}|${owner.slice(1)}`, 'g'), '');
+  return s.replace(/(다음\s*주\s*)?[월화수목금토일]요일|\d{1,2}\s*월\s*\d{1,2}\s*일|(?<![\d:])\d{1,2}\s*[\/.]\s*\d{1,2}(?![\d:])|오늘|내일|모레|이번\s*주|다음\s*주/g, '')
+    .replace(/(오전|오후)?\s*\d{1,2}\s*시\s*(반|\d{1,2}\s*분)?|\d{1,2}:\d{2}/g, '')
+    .replace(/^\s*(대리|과장|차장|부장|사원|주임|팀장|매니저)?\s*(님)?\s*(이|가|은|는|께서)?\s/, ' ')
+    .replace(/(까지|중으로|중에|안에|에)\s*$/g, '').replace(/\s(까지|중으로)\s/g, ' ')
+    .replace(/^[\s,:\-]+|[\s,:.\-]+$/g, '').replace(/\s{2,}/g, ' ');
+}
+function ruleParse(text) {
+  const items = []; let g = 0;
+  for (let line of text.split(/\n+/)) {
+    line = line.replace(/^\s*([-*•·]|\d+[.)])\s*/, '').trim();
+    if (line.length < 3 || /^\[.*\]$/.test(line)) continue;
+    const time = parseTime(line);
+    if (/(회의|미팅|면접|보고)/.test(line) && time) {
+      const att = state.members.filter(n => line.includes(n) || line.includes(n.slice(1)));
+      items.push({ kind: 'meeting', title: att.reduce((s, n) => s.replace(n, ''), cleanTitle(line, '')).replace(/\(\s*[,\s]*\)/g, '').replace(/^(다음\s*)/, '').trim() || '회의', date: parseDate(line) || T(), time, attendees: att.length ? att : [...state.members] });
+      continue;
+    }
+    const parts = line.split(/\s*(?:→|->|끝나면|완료되면|마치면|이어서|받아서)\s*/).filter(p => p.trim());
+    if (parts.length > 1) {
+      g++;
+      parts.forEach(p => { const owner = findOwner(p); items.push({ kind: 'step', group: g, title: cleanTitle(p, owner), owner, date: parseDate(p) }); });
+    } else {
+      const owner = findOwner(line);
+      items.push({ kind: 'task', title: cleanTitle(line, owner), owner, date: parseDate(line) });
+    }
+  }
+  // 협업 단계 예정일이 비어 있으면 앞 단계 +2일
+  items.forEach((it, i) => { if (it.kind === 'step' && !it.date) { const p = items[i - 1]; it.date = p && p.kind === 'step' && p.group === it.group && p.date ? ymd(addDays(new Date(p.date + 'T00:00:00'), 2)) : ymd(addDays(today(), 3)); } });
+  return items.filter(it => it.title);
+}
+async function parseMemo(text) {
+  try {
+    const r = await fetch('/api/parse', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, members: state.members, today: T() }) });
+    if (r.ok) { const j = await r.json(); if (Array.isArray(j.items) && j.items.length) return { items: j.items, by: 'AI' }; }
+  } catch (e) {}
+  return { items: ruleParse(text), by: '규칙' };
+}
+let parsed = [];
+function renderPreview(by) {
+  const opts = sel => ['', ...state.members].map(m => `<option ${m === sel ? 'selected' : ''} value="${esc(m)}">${m || '담당자 없음'}</option>`).join('');
+  const kindLabel = it => it.kind === 'meeting' ? `<span class="kind meeting">회의 ${esc(it.time)}</span>` : it.kind === 'step' ? `<span class="kind step">협업${it.group}</span>` : '<span class="kind task">업무</span>';
+  $('preview').innerHTML = parsed.length
+    ? `<div class="hint">${parsed.length}건을 찾았어요 (${by} 추출). 확인·수정 후 추가하세요.</div>` + parsed.map((p, i) => `<div class="item">
+        ${kindLabel(p)}
+        <input data-i="${i}" data-k="title" value="${esc(p.title)}">
+        ${p.kind === 'meeting' ? `<input data-i="${i}" data-k="time" type="time" value="${esc(p.time)}">` : `<select data-i="${i}" data-k="owner">${opts(p.owner)}</select>`}
+        <input data-i="${i}" data-k="date" type="date" value="${esc(p.date)}">
+      </div>`).join('')
+    : '<div class="hint">업무를 찾지 못했어요.</div>';
+  $('memoOk').disabled = !parsed.length;
+}
+function commitParsed() {
+  let nt = 0, nf = 0, nm = 0;
+  const groups = {};
+  for (const p of parsed) {
+    if (!p.title.trim()) continue;
+    if (p.kind === 'meeting') { state.meetings.push({ id: uid(), date: p.date || T(), time: p.time || '10:00', title: p.title.trim(), attendees: p.attendees && p.attendees.length ? p.attendees : [...state.members] }); nm++; }
+    else if (p.kind === 'step') (groups[p.group] = groups[p.group] || []).push(p);
+    else { addTask({ title: p.title.trim(), owner: p.owner || state.members[0], plan: p.date }); nt++; }
+  }
+  for (const steps of Object.values(groups)) {
+    addFlow(steps[0].title.trim(), steps.map(s => ({ title: s.title.trim(), owner: s.owner || state.members[0], plan: s.date }))); nf++;
+  }
+  save(); render();
+  toast(`업무 ${nt}건 · 협업 ${nf}건 · 회의 ${nm}건을 등록했어요`);
+}
+
+// ---------- 이벤트 ----------
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.filter) {
+    filter = b.dataset.filter; render();
+    // 본인 화면을 열면 새로 받은 업무를 확인한 것으로 처리 (카드의 NEW 표시는 이번 화면까지 유지)
+    state.tasks.forEach(x => { if (x.owner === filter && x.handoff) x.seen = true; });
+    save(); return;
+  }
+  if (b.dataset.act) act(b.dataset.id, b.dataset.act);
+});
+const memberOpts = (none) => (none ? '<option value="">없음</option>' : '') + state.members.map(m => `<option>${esc(m)}</option>`).join('');
+$('btnAdd').onclick = () => {
+  $('fOwner').innerHTML = memberOpts(false); $('fNext').innerHTML = memberOpts(true);
+  $('fTitle').value = ''; $('fPlan').value = ymd(addDays(today(), 3)); $('fNextPlan').value = ymd(addDays(today(), 5));
+  if (filter !== '전체') $('fOwner').value = filter;
+  $('dlgAdd').showModal(); $('fTitle').focus();
+};
+$('addCancel').onclick = () => $('dlgAdd').close();
+$('addOk').onclick = () => {
+  const title = $('fTitle').value.trim(); if (!title) { $('fTitle').focus(); return; }
+  const owner = $('fOwner').value, next = $('fNext').value;
+  if (next) addFlow(title, [{ title, owner, plan: $('fPlan').value }, { title: `${title} 후속`, owner: next, plan: $('fNextPlan').value }]);
+  else addTask({ title, owner, plan: $('fPlan').value });
+  save(); render(); $('dlgAdd').close(); toast('업무를 추가했어요');
+};
+$('btnMeeting').onclick = () => {
+  $('mTitle').value = ''; $('mDate').value = T();
+  $('mPeople').innerHTML = state.members.map(m => `<label style="margin:0;color:inherit"><input type="checkbox" value="${esc(m)}" checked> ${esc(m)}</label>`).join('');
+  $('dlgMeeting').showModal(); $('mTitle').focus();
+};
+$('mCancel').onclick = () => $('dlgMeeting').close();
+$('mOk').onclick = () => {
+  const title = $('mTitle').value.trim(); if (!title) { $('mTitle').focus(); return; }
+  const att = [...$('mPeople').querySelectorAll('input:checked')].map(i => i.value);
+  state.meetings.push({ id: uid(), date: $('mDate').value || T(), time: $('mTime').value || '10:00', title, attendees: att.length ? att : [...state.members] });
+  save(); render(); $('dlgMeeting').close(); toast('회의를 추가했어요');
+};
+$('btnRepeat').onclick = generateRepeat;
+$('btnReset').onclick = () => { if (confirm('샘플 데이터로 초기화할까요? 입력한 내용이 지워져요.')) { state = sample(); filter = '전체'; save(); render(); } };
+$('btnMemo').onclick = () => { parsed = []; $('preview').innerHTML = ''; $('memoOk').disabled = true; $('dlgMemo').showModal(); };
+$('memoCancel').onclick = () => $('dlgMemo').close();
+$('memoSample').onclick = () => {
+  $('memo').value = '[11월 행사 준비 회의록]\n- 김민지 대리 금요일까지 송년회 장소 견적 받기 → 이서준 다음 주 화요일까지 품의서 작성 → 박지우 다음 주 목요일까지 전 직원 공지\n- 최현우 내일까지 11월 급여 변동사항 취합\n- 박지우 11월 5일까지 개인정보보호 교육 대상자 명단 정리\n- 다음 회의 수요일 오후 3시 (김민지, 이서준)';
+};
+$('memoParse').onclick = async () => {
+  const text = $('memo').value.trim(); if (!text) return;
+  $('memoParse').disabled = true; $('memoParse').textContent = '변환 중…';
+  const r = await parseMemo(text);
+  parsed = r.items.map(it => ({ kind: it.kind || 'task', group: it.group || 0, title: it.title || '', owner: state.members.includes(it.owner) ? it.owner : '',
+    date: it.date || '', time: it.time || '', attendees: (it.attendees || []).filter(a => state.members.includes(a)) }));
+  renderPreview(r.by);
+  $('memoParse').disabled = false; $('memoParse').textContent = '변환';
+};
+$('preview').addEventListener('input', e => { const el = e.target; if (el.dataset.i) parsed[+el.dataset.i][el.dataset.k] = el.value; });
+$('memoOk').onclick = () => { commitParsed(); $('dlgMemo').close(); $('memo').value = ''; };
+
+render();
+</script>
+</body>
+</html>
